@@ -1396,7 +1396,8 @@ public class Http1ClientConnection extends Http1Connection implements io.vertx.c
 
   protected void handleIdle(IdleStateEvent event) {
     synchronized (this) {
-      if (pending.isEmpty() && current == null && inflight.isEmpty()) {
+      if (pending.isEmpty() && current == null && inflight.isEmpty() &&
+        chctx.pipeline().get(WebSocketHandshakeInboundHandler.class) == null) {
         return;
       }
     }

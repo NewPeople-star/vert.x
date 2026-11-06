@@ -1788,6 +1788,30 @@ public class WebSocketTest extends VertxTestBase2 {
   }
 
   @Test
+  public void testHandshakeIdleTimeoutFires(Checkpoint checkpoint1, Checkpoint checkpoint2) throws Exception {
+    NetServer server = vertx.createNetServer()
+      .connectHandler(so -> checkpoint2.succeed())
+      .listen(1234, DEFAULT_HTTP_HOST)
+      .await(20, TimeUnit.SECONDS);
+    try {
+      client = vertx.createWebSocketClient(new WebSocketClientOptions()
+        .setIdleTimeout(500)
+        .setIdleTimeoutUnit(TimeUnit.MILLISECONDS));
+      WebSocketConnectOptions options = new WebSocketConnectOptions()
+        .setPort(1234)
+        .setHost(DEFAULT_HTTP_HOST)
+        .setURI("/");
+      client.connect(options).onComplete(TestUtils.onFailure(err -> {
+        assertEquals(WebSocketHandshakeException.class, err.getClass());
+        checkpoint1.succeed();
+      }));
+      checkpoint1.awaitSuccess();
+    } finally {
+      server.close();
+    }
+  }
+
+  @Test
   public void testHandshakeTimeoutDoesNotFire(Checkpoint checkpoint) {
     server = vertx.createHttpServer()
       .webSocketHandler(ws -> {
